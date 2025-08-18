@@ -66,6 +66,7 @@ class WhisperAudioJointEncoderSegmenter(BaseAudioJointEncoderSegmenter):
         make_v_proj_identity: bool = False, 
         is_word_level: bool = False,
         skip_prefix_idx: Optional[int] = None,
+        new_vocab: Dict = None,
         **kwargs,
     ): 
         super().__init__()
@@ -104,6 +105,15 @@ class WhisperAudioJointEncoderSegmenter(BaseAudioJointEncoderSegmenter):
             print("Would adopt word-level averaging")
             assert skip_prefix_idx != None, f"To adopt word level averaging, please set `skip_prefix_idx` properly and with cautious."
         self.skip_prefix_idx = skip_prefix_idx
+
+        # Other tokenizer input
+        if new_vocab is not None:
+            if new_vocab.get("vocab_size", None) and new_vocab.get("padding_idx", None):
+                self.audio_segmenter.decoder.embed_tokens = torch.nn.Embedding(new_vocab["vocab_size"], self.audio_segmenter.decoder.embed_tokens.weight.shape[1], padding_idx=new_vocab["padding_idx"])
+            elif new_vocab.get("vocab_size", None):
+                self.audio_segmenter.decoder.embed_tokens = torch.nn.Embedding(new_vocab["vocab_size"], self.audio_segmenter.decoder.embed_tokens.weight.shape[1])
+            else:
+                raise ValueError("Plese provide vocab_size in new_vocab")
     
     def _initialize_identity(self, target_linear_layer):
         # initialize the target_linear_layer as identity matrix
